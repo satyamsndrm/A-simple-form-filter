@@ -1,0 +1,256 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <title>Merkle Foundry</title>
+    <style>
+        body{
+            background-color: #e5e5e5;
+        }
+        .tableCol{
+            display: flex;
+            width:100%;
+        }
+       .funContainer{
+            width:25%;
+            padding:3px;
+            align-items: center;
+            border: 1px solid black;
+       }
+       .dropTarget{
+            min-height:100px;
+            padding-bottom: 60px;
+       }
+       .title{
+            font-weight: 600;
+            text-align: center;
+       }
+       button{
+            display: block;
+            margin:4px;
+            margin-left:15%;
+            background-color: darkgrey;
+            border: 2px solid darkblue;
+            color: white;
+            min-width:100px;
+       }
+
+       #formBox{
+            margin-top: 20px;
+       }
+       .header{
+            margin-left: 25%;
+            background-color: lightgrey;
+            border: 3px solid darkgrey;
+            box-shadow: 3px 3px 22px darkgrey;
+            width:50%;
+       }
+       .headerTItle{
+            color: black;
+            font-weight: 800;
+            font-size: 33px;
+            padding: 22px;
+            text-align: center;
+       }
+        @media (max-width: 567px) { 
+            .header{
+                margin-left: 0px;
+                width:100%;
+            }
+
+        }
+        .panel{
+            min-height:100px;
+            margin-top: 10px;
+        }
+        .panel-heading{
+            font-weight: 700;
+            text-align: center;
+        }
+        .panel-body{
+            font-size: 22px;
+            text-align: center;
+            padding:22px , 20px;
+        }
+        .notice{
+            font-size: 12px;
+            font-weight: 700;
+            color: darkred;
+            margin-bottom: 5px;
+        }
+    </style>
+
+<script src="https://code.jquery.com/jquery-3.3.1.min.js" ></script>
+    <script type="text/javascript">
+        //creating global variable data to hold input data
+        var data;
+        function getData() {
+            return JSON.parse(localStorage.getItem('function'));
+        }
+        if(!localStorage.getItem('function')){
+            var set =JSON.stringify({catA:[],catB:[],catC:[],catD:[]});
+            localStorage.setItem('function' , set);
+            data = getData();
+        }else{
+            data =getData();
+        }
+    </script>
+</head>
+<body>
+    <div class="header">
+        <div class="headerTitle"> Create Your Function</div>
+    </div>
+    <div class="container">
+        <div id="formBox">
+            <form action="#" id="form" >
+                <div class="form-group">
+                    <textarea class="form-control" id="fCode" rows="4" placeholder="Write your function here......"></textarea>
+                </div>
+                <input type="submit" class="btn btn-info" value="Save it" />
+            </form>
+        </div>
+        <div class="notice">**** Drop the function buttons on the empty spaces of the respective category boxes.</div>
+       <div id="fCategory" class="tableCol">
+           <div class="funContainer col-sm-3 col-xs-6">
+                <div class="title">Category A</div>
+                <div id="catA" class="dropTarget"></div>
+           </div>
+           <div class="funContainer col-sm-3 col-xs-6">
+                <div class="title">Category B</div>
+                <div id="catB" class="dropTarget"></div>
+            </div>
+           <div class="funContainer col-sm-3 col-xs-6">
+                <div class="title">Category C</div>
+                <div id="catC" class="dropTarget"></div>
+            </div>
+           <div class="funContainer col-sm-3 col-xs-6">
+                <div class="title">Category D</div>
+                <div id="catD" class="dropTarget"></div>
+            </div>
+       </div>
+
+       <div class="panel panel-primary">
+           <div class="panel-heading">Your Output</div>
+           <div class="panel-body" id="showOutput">Function Output will be shown here.....</div>
+       </div>
+
+       <div id="curFunBody"></div>
+
+    </div>
+<script type="text/javascript">
+    $(document).ready(function(){
+       // loading functions if any
+        loadAllButtons();
+        function loadAllButtons(){
+            loadFunctions('catA');
+            loadFunctions('catB');
+            loadFunctions('catC');
+            loadFunctions('catD');
+        }
+
+        //function to load function of a particular category
+        function loadFunctions(category){
+            //console.log(category);
+            $('div#'+category).empty();
+            var toLoad ="";
+            for(var i =0;i<data[category].length;i++){
+                toLoad+=getButtons(category ,data[category][i].funId,data[category][i].funName);
+            };
+            $('#'+category).append(toLoad);
+        }
+
+        function getButtons(category , funId , funName){
+            return "<button draggable='true' id='"+funId+"' class='btn btn-primary' catId='"+category+"' >"+funName+"</button>";
+        }
+
+        //form submission handler
+        $('#form').submit(function(e){
+            e.preventDefault();
+            var funcBody =$('#fCode').val().trim(' ');
+            if(funcBody!=''){
+                var pattern = /([a-zA-Z_0-9]+\s*)\(\s*\)(\s*)+/g; 
+                var result = funcBody.match(pattern);
+                if(result){
+                    var toPush={
+                        funId:Math.floor(Math.random()*12321),
+                        funName:result[0],
+                        function:funcBody
+                    }
+                    data.catA.push(toPush);
+                    var toStore = JSON.stringify(data);
+                    localStorage.setItem('function' , toStore);
+                    $('#fCode').val('');
+                    $('#catA').append(getButtons('catA' ,toPush.funId , toPush.funName));
+                }
+            }
+        });
+
+        //function buttons to write and execute the stored functions
+        $('body').on('click' , 'button' , function(e){
+            var fid = $(this).attr('id');
+            var cat =$(this).attr('catId')
+            var key = getIndex(cat , fid);
+            var fun = data[cat][key].function ;
+            var funName=data[cat][key].funName;
+            writeFun(fun , funName);
+        });
+
+        //function to get the index of a particular category
+        function getIndex(category , value) {
+            var key;
+            data[category].forEach(function(el , i , arr){
+                if(el.funId==value){
+                    key=i;
+                }
+            });
+
+            return key;
+        }
+
+        //writting the function on DOM in div box
+        function writeFun(fBody,fName){
+            $('#curFunBody').html("<script type='text/javascript'> "+fBody+" var k = "+fName+"; $('#showOutput').html(k);\<\/script>");
+        }
+
+        //deleting and adding funcData on drag and drop
+        function deleteAndAdd(sourceCat , targetCat , funId){
+            var i =getIndex(sourceCat , funId);
+            data[targetCat].push(data[sourceCat][i]);
+            data[sourceCat].splice(i , 1);
+            var toStore = JSON.stringify(data);
+            localStorage.setItem('function' , toStore);
+            //data =getData();
+            loadFunctions(sourceCat);
+            loadFunctions(targetCat);
+        }
+
+        //functions for drag and drop
+        document.addEventListener("dragstart", function(event) {
+            var target = $(event.target);
+            event.dataTransfer.setData("sourceId", event.target.id);
+            event.dataTransfer.setData("sourceCategory", target.attr('catId'));
+        });
+        document.addEventListener("dragover", function(event) {
+            event.preventDefault();
+        });
+        document.addEventListener("drop", function(event) {
+            event.preventDefault();
+            if ( event.target.className == "dropTarget" ) {
+                var targetCategory = event.target.id;
+                var funId = event.dataTransfer.getData("sourceId");
+                var sourceCategory = event.dataTransfer.getData("sourceCategory");
+                deleteAndAdd(sourceCategory , targetCategory , funId);
+                event.target.appendChild(document.getElementById(funId));
+            }else{
+               alert('Failed to change category... You didn\'t drop the button in empty space of the category box.')
+            }
+        });
+
+    });
+
+
+</script>
+</body>
+</html>
